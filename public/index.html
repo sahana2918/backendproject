@@ -291,7 +291,7 @@ linkedin.com/in/your-link
 </footer>
 <script>
 
-const BASE_URL = "https://backendproject-7dam.vercel.app/";
+const BASE_URL = "https://backendproject-7dam.vercel.app/api";
 
 /* ===== SCROLL ===== */
 const sections = document.querySelectorAll("section");
@@ -364,7 +364,7 @@ document.getElementById("contactForm").addEventListener("submit", async function
     if (!valid) return;
 
     try {
-        const res = await fetch(`${BASE_URL}/api/contacts`, {
+        const res = await fetch(BASE_URL, {   // ✅ FIXED HERE
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -394,7 +394,7 @@ document.getElementById("contactForm").addEventListener("submit", async function
 /* ===== LOAD MESSAGES ===== */
 async function loadMessages() {
     try {
-        const res = await fetch(`${BASE_URL}/api/contacts`);
+        const res = await fetch(BASE_URL);   // ✅ FIXED HERE
         const data = await res.json();
 
         const box = document.getElementById("messagesBox");
