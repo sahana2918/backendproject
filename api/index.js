@@ -1,28 +1,10 @@
-
-import express from "express";
 import mongoose from "mongoose";
-import cors from "cors";
-
-const app = express();
-
-/* ===== MIDDLEWARE ===== */
-app.use(cors());
-app.use(express.json());
-
-/* ===== ROOT ===== */
-app.get("/", (req, res) => {
-  res.send("API running 🚀");
-});
 
 /* ===== DB CONNECTION ===== */
 let isConnected = false;
 
 const connectDB = async () => {
   if (isConnected) return;
-
-  if (!process.env.MONGO_URI) {
-    throw new Error("❌ MONGO_URI not found");
-  }
 
   const db = await mongoose.connect(process.env.MONGO_URI);
   isConnected = db.connections[0].readyState;
@@ -38,60 +20,51 @@ const Contact =
     date: { type: Date, default: Date.now }
   });
 
-/* ================= CRUD ================= */
+/* ===== HANDLER ===== */
+export default async function handler(req, res) {
 
-// ✅ CREATE
-app.post("/api/contacts", async (req, res) => {
+  // ✅ CORS
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+
   try {
     await connectDB();
-    const newContact = new Contact(req.body);
-    await newContact.save();
-    res.json({ success: true, data: newContact });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
-  }
-});
 
-// ✅ READ
-app.get("/api/contacts", async (req, res) => {
-  try {
-    await connectDB();
-    const data = await Contact.find().sort({ date: -1 });
-    res.json(data);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
-  }
-});
+    /* ===== CREATE ===== */
+    if (req.method === "POST") {
+      const newContact = new Contact(req.body);
+      await newContact.save();
+      return res.json({ success: true, data: newContact });
+    }
 
-// ✅ UPDATE
-app.put("/api/contacts/:id", async (req, res) => {
-  try {
-    await connectDB();
-    const updated = await Contact.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true }
-    );
-    res.json(updated);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
-  }
-});
+    /* ===== READ ===== */
+    if (req.method === "GET") {
+      const data = await Contact.find().sort({ date: -1 });
+      return res.json(data);
+    }
 
-// ✅ DELETE
-app.delete("/api/contacts/:id", async (req, res) => {
-  try {
-    await connectDB();
-    await Contact.findByIdAndDelete(req.params.id);
-    res.json({ message: "Deleted successfully" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
-  }
-});
+    /* ===== UPDATE ===== */
+    if (req.method === "PUT") {
+      const { id } = req.query;
+      const updated = await Contact.findByIdAndUpdate(id, req.body, { new: true });
+      return res.json(updated);
+    }
 
-/* ===== EXPORT ===== */
-export default app;
+    /* ===== DELETE ===== */
+    if (req.method === "DELETE") {
+      const { id } = req.query;
+      await Contact.findByIdAndDelete(id);
+      return res.json({ message: "Deleted successfully" });
+    }
+
+    return res.status(405).json({ message: "Method not allowed" });
+
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+}
